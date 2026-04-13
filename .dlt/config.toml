@@ -1,0 +1,108 @@
+# put your configuration values here
+
+[runtime]
+log_level="WARNING"  # the system log level of dlt
+# use the dlthub_telemetry setting to enable/disable anonymous usage data reporting, see https://dlthub.com/docs/reference/telemetry
+dlthub_telemetry = true
+
+# Microsoft Graph (@dlt.source name="sharepoint_graph")
+# Service principal (client credentials): tenant_id + client_id here;
+# client_secret only in .dlt/secrets.toml → [sources.sharepoint_graph] client_secret = "..."
+# App registration needs Microsoft Graph application permissions (e.g. Sites.Read.All) + admin consent.
+#
+# Site: DataWonderland (curaleaf.sharepoint.com). Human link (library view):
+# https://curaleaf.sharepoint.com/sites/DataWonderland/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FDataWonderland%2FShared%20Documents%2FWholeSale%5FSimplification%2FDelivery&viewid=653bdb1c-ec3a-4ebf-8901-6581fe6f0ca3
+#
+# Pipeline: (1) GET .../sites/{encoded-site-key} → site id; (2) GET .../sites/{id}/drive/root:/{folder}:/children
+# See: https://learn.microsoft.com/en-us/graph/api/site-get
+#      https://learn.microsoft.com/en-us/graph/api/driveitem-list-children
+
+# ---------------------------------------------------------------------------------------------------
+# Site: DataWonderland (curaleaf.sharepoint.com). Human link (library view):
+# ---------------------------------------------------------------------------------------------------
+[sources.sharepoint_graph]
+tenant_id = "24611620-a8ee-4b1a-973b-d8960883fa48"
+client_id = "5374ad82-b51a-4d6e-bc6d-67ba59908ea2"
+sharepoint_site_key = "curaleaf.sharepoint.com:/sites/DataWonderland"
+
+# Path relative to the default document library root. If you get 404 or an empty list, try:
+# sharepoint_folder_path = "Shared Documents/WholeSale_Simplification/Delivery"
+sharepoint_folder_path = "WholeSale_Simplification/Delivery"
+# Target CSV in that folder (metadata row appears in children; file content needs a separate download step).
+sharepoint_csv_file_name = "sweed_product_map.csv"
+# Same folder: RTL_Product_Mapping.csv → table RTL_Product_Mapping; LT_Product_Mapping.csv → LT_Product_Mapping.
+# ---------------------------------------------------------------------------------------------------
+
+# Snowflake target for CSV load: AIRBYTE_DB_DEV.<schema>.(sweed_product_map | RTL_Product_Mapping | LT_Product_Mapping)
+# - database: .dlt/secrets.toml → [destination.snowflake.credentials] database = "AIRBYTE_DB_DEV"
+# - schema: snowflake_dataset_name below (default SHAREPOINT). Override if your role cannot write there.
+# - table: resource name sweed_product_map
+# Run: uv run python rest_api_pipeline.py csv
+#
+# Error "Insufficient privileges to operate on schema 'SHAREPOINT'" → your Snowflake ROLE needs
+# USAGE + CREATE TABLE on that schema (and on the staging schema). A security admin runs, e.g.:
+#   USE ROLE SECURITYADMIN;  -- or ACCOUNTADMIN / schema owner
+#   USE DATABASE DEV_POWERAPPS;
+#   CREATE SCHEMA IF NOT EXISTS SHAREPOINT;
+#   CREATE SCHEMA IF NOT EXISTS SHAREPOINT_staging;  -- dlt default layout: "%s_staging"
+#   GRANT USAGE ON SCHEMA SHAREPOINT TO ROLE <your_loader_role>;
+#   GRANT CREATE TABLE ON SCHEMA SHAREPOINT TO ROLE <your_loader_role>;
+#   GRANT USAGE ON SCHEMA SHAREPOINT_staging TO ROLE <your_loader_role>;
+#   GRANT CREATE TABLE ON SCHEMA SHAREPOINT_staging TO ROLE <your_loader_role>;
+# (Use the same role as in secrets "role" = ... if you set one.)
+#
+# After a failed load: uv run dlt --non-interactive pipeline sharepoint_sweed_product_map drop-pending-packages
+snowflake_dataset_name = "SHAREPOINT"
+
+# REST pipeline ``uv run python rest_api_pipeline.py`` → tables graph_site, sharepoint_folder_children
+sharepoint_graph_rest_dataset_name = "sharepoint_graph_data"
+
+# Keep dataset_name casing (e.g. SHAREPOINT) as the Snowflake schema name.
+[destination.snowflake]
+enable_dataset_name_normalization = false
+
+# --- MSSQL Server / Azure SQL (@dlt.source name="mssqlserver", sql_database) ---
+# Password or full connection_string → .dlt/secrets.toml → [sources.mssqlserver]
+# Map fields from .raw_json_config/sqlserver.json (do not commit that JSON if it contains secrets).
+#
+# Optional: restrict tables (default = all tables in mssql_schema):
+# table_names = ["your_table"]
+#
+# Snowflake target schema name (dlt dataset_name); grant your loader role USAGE + CREATE TABLE here
+# and on <name>_staging if dlt uses a staging schema.
+#
+# defer_table_reflect=true: Dagster imports without contacting SQL Server; set a non-empty table_names list.
+# defer_table_reflect=false: reflect all tables in mssql_schema at import (SQL Server must allow this host).
+[sources.mssqlserver]
+host = "cura-customer-integration.database.windows.net"
+port = 1433
+database = "cura-customer-integration-prod"
+username = "reader"
+mssql_schema = "dbo"
+driver = "mssql+pymssql"
+defer_table_reflect = false
+# table_names = ["your_table_1", "your_table_2"]
+snowflake_dataset_name = "CUSTOMER_INTEGRATION_PROD"
+
+# --- Deputy REST (@dlt.source name="deputy_*") ---
+# Bearer token → .dlt/secrets.toml → [sources.deputy] api_token = "..."
+# Snowflake: reuse [destination.snowflake.credentials] (host, database, warehouse, role, keypair, etc.).
+# Optional per-stream initial Modified cursor (overrides code defaults aligned with Airbyte YAML):
+# initial_modified_timesheet_incremental = "2022-06-01T00:00:00-07:00"
+# initial_modified_contact_incremental = "2015-12-01T00:00:00-07:00"
+# initial_modified_company = "1970-01-01T00:00:00+00:00"
+[sources.deputy]
+base_url = "https://689d8628075027.na.deputy.com"
+page_size = 500
+# Snowflake schema (dlt dataset_name) for all nine deputy pipelines
+snowflake_dataset_name = "DEPUTY"
+
+# --- Leaftrade REST (@dlt.source name="leaftrade_*") ---
+# API key → .dlt/secrets.toml → [sources.leaftrade] api_key = "..."
+# Snowflake: reuse [destination.snowflake.credentials] (host, database, warehouse, role, keypair, etc.).
+[sources.leaftrade]
+base_url = "https://app.leaf.trade"
+page_size = 100
+start_date = "2019-01-01T00:00:00Z"
+# Snowflake schema (dlt dataset_name) for all twelve leaftrade pipelines
+snowflake_dataset_name = "LEAFTRADE"

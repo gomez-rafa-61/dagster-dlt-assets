@@ -1,0 +1,8 @@
+# Dagster Cloud: code locations for serverless/hybrid deploy (dagster-io/dagster-cloud-action).
+# Set repository variable DAGSTER_CLOUD_ORGANIZATION and secret DAGSTER_CLOUD_API_TOKEN.
+# See: https://github.com/dagster-io/dagster-cloud-serverless-quickstart
+locations:
+  - code_source:
+      package_name: data_pipelines.definitions
+      working_directory: ./
+    location_name: data_pipelines

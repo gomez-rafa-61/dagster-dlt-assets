@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Python
+        run: uv python install 3.12
+
+      - name: Sync (dev tools + app)
+        run: uv sync --group dev
+
+      - name: Ruff
+        run: uv run ruff check data_pipelines rest_api_pipeline.py
+
+      - name: Ruff format (check only)
+        run: uv run ruff format --check data_pipelines rest_api_pipeline.py
+
+      - name: Import definitions
+        run: uv run python -c "from data_pipelines.definitions import defs; assert defs is not None"
+
+      - name: Validate Dagster definitions
+        run: uv run dagster definitions validate -w workspace.yaml

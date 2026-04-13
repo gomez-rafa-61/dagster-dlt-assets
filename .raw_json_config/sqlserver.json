@@ -1,0 +1,22 @@
+{
+    "name": "Cura-Customer-Integration-Prod",
+    "workspaceId": "04977023-75a9-4ed4-ab9b-a804b8796b1e",
+    "definitionId": "b5ea17b1-f170-46dc-bc31-cc744ca984c1",
+    "configuration": {
+      "additionalProperties": {},
+      "replication_method": {
+        "method": "STANDARD"
+      },
+      "tunnel_method": {
+        "tunnel_method": "NO_TUNNEL"
+      },
+      "username": "reader",
+      "password": "2;YJ##?C[05;",
+      "database": "cura-customer-integration-prod",
+      "schemas": [
+        "dbo"
+      ],
+      "port": 1433,
+      "host": "cura-customer-integration.database.windows.net"
+    }
+  }

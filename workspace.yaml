@@ -1,0 +1,7 @@
+# Dagster code locations. working_directory ensures dlt finds .dlt/ (config + secrets) at project root.
+load_from:
+  - python_module:
+      module_name: data_pipelines.definitions
+      attribute: defs
+      working_directory: .
+      location_name: data_pipelines

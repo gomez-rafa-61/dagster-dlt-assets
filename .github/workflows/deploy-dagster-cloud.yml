@@ -1,0 +1,112 @@
+# Deploy code locations to Dagster Cloud (Serverless-style CI build).
+#
+# Required repository secrets:
+#   DAGSTER_CLOUD_API_TOKEN  — from Dagster Cloud / Organization settings
+# Required repository variables (Settings → Secrets and variables → Actions → Variables):
+#   DAGSTER_CLOUD_ORGANIZATION — your Dagster Cloud org slug
+#
+# Optional: set deployment name by changing `deployment` below (e.g. prod / dev).
+name: Deploy (Dagster Cloud)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: ${{ github.ref }}/dagster-cloud-deploy
+  cancel-in-progress: true
+
+env:
+  DAGSTER_CLOUD_API_TOKEN: ${{ secrets.DAGSTER_CLOUD_API_TOKEN }}
+  ENABLE_FAST_DEPLOYS: "true"
+  PYTHON_VERSION: "3.12"
+  DAGSTER_CLOUD_YAML_PATH: "."
+  DAGSTER_CLOUD_FILE: "dagster_cloud.yaml"
+  DAGSTER_CLOUD_ORGANIZATION: ${{ vars.DAGSTER_CLOUD_ORGANIZATION }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  dagster_cloud_deploy:
+    name: Dagster Cloud deploy
+    runs-on: ubuntu-22.04
+    if: ${{ secrets.DAGSTER_CLOUD_API_TOKEN != '' && vars.DAGSTER_CLOUD_ORGANIZATION != '' }}
+
+    steps:
+      - name: Prerun checks
+        id: prerun
+        uses: dagster-io/dagster-cloud-action/actions/utils/prerun@v1.11.9
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Validate Dagster Cloud config
+        id: ci-validate
+        if: steps.prerun.outputs.result != 'skip'
+        uses: dagster-io/dagster-cloud-action/actions/utils/dagster-cloud-cli@v1.11.9
+        with:
+          command: "ci check --project-dir ${{ env.DAGSTER_CLOUD_YAML_PATH }} --dagster-cloud-yaml-path ${{ env.DAGSTER_CLOUD_FILE }}"
+
+      - name: Initialize build session
+        id: ci-init
+        if: steps.prerun.outputs.result != 'skip'
+        uses: dagster-io/dagster-cloud-action/actions/utils/ci-init@v1.11.9
+        with:
+          project_dir: ${{ env.DAGSTER_CLOUD_YAML_PATH }}
+          dagster_cloud_yaml_path: ${{ env.DAGSTER_CLOUD_FILE }}
+          deployment: prod
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }} (PEX)
+        id: setup-python-version
+        if: steps.prerun.outputs.result == 'pex-deploy'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install setuptools (PEX)
+        if: steps.prerun.outputs.result == 'pex-deploy'
+        run: ${{ steps.setup-python-version.outputs.python-path }} -m pip install setuptools
+        shell: bash
+
+      - name: PEX build
+        id: run-pex-build
+        if: steps.prerun.outputs.result == 'pex-deploy'
+        uses: dagster-io/dagster-cloud-action/actions/utils/dagster-cloud-cli@v1.11.9
+        with:
+          command: "ci build --build-strategy=python-executable --python-version ${{ env.PYTHON_VERSION }} --pex-deps-cache-from='${{ github.repository }}' --pex-deps-cache-to='${{ github.repository }}'"
+
+      - name: Set up Docker Buildx
+        if: steps.prerun.outputs.result == 'docker-deploy'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker build
+        id: run-docker-build
+        if: steps.prerun.outputs.result == 'docker-deploy'
+        uses: dagster-io/dagster-cloud-action/actions/utils/dagster-cloud-cli@v1.11.9
+        with:
+          command: "ci build --build-strategy=docker --python-version ${{ env.PYTHON_VERSION }}"
+
+      - name: Deploy to Dagster Cloud
+        id: ci-deploy
+        if: steps.prerun.outputs.result != 'skip'
+        uses: dagster-io/dagster-cloud-action/actions/utils/dagster-cloud-cli@v1.11.9
+        with:
+          command: "ci deploy"
+
+      - name: PR comment (branch deployments)
+        id: ci-notify
+        if: steps.prerun.outputs.result != 'skip'
+        uses: dagster-io/dagster-cloud-action/actions/utils/dagster-cloud-cli@v1.11.9
+        with:
+          command: "ci notify --project-dir=${{ env.DAGSTER_CLOUD_YAML_PATH }}"
+
+      - name: Summary
+        id: ci-summary
+        if: steps.prerun.outputs.result != 'skip'
+        uses: dagster-io/dagster-cloud-action/actions/utils/dagster-cloud-cli@v1.11.9
+        with:
+          command: "ci status --output-format=markdown >> $GITHUB_STEP_SUMMARY"

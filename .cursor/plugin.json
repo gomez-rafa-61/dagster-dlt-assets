@@ -1,0 +1,112 @@
+{
+  "name": "dlt-dagster-pipeline-workspace",
+  "version": "1.0.0",
+  "description": "Complete workflow for building domain-organized dlt+Dagster pipeline workspaces. Covers source discovery, REST API pipeline creation, debugging, data validation, incremental loading, custom pagination, Dagster orchestration, CI/CD, and secrets management — all targeting Snowflake (or any dlt destination).",
+  "author": "Rafael Gomez",
+  "license": "MIT",
+  "skills": [
+    {
+      "name": "find-source",
+      "path": "skills/find-source/SKILL.md",
+      "description": "Find a dlt source for a given API or data provider."
+    },
+    {
+      "name": "create-rest-api-pipeline",
+      "path": "skills/create-rest-api-pipeline/SKILL.md",
+      "description": "Create a dlt REST API pipeline with single endpoint, dev limits, and credential setup."
+    },
+    {
+      "name": "debug-pipeline",
+      "path": "skills/debug-pipeline/SKILL.md",
+      "description": "Debug and inspect a dlt pipeline after running it."
+    },
+    {
+      "name": "validate-data",
+      "path": "skills/validate-data/SKILL.md",
+      "description": "Validate schema and data after a successful dlt pipeline load."
+    },
+    {
+      "name": "view-data",
+      "path": "skills/view-data/SKILL.md",
+      "description": "Query, explore, or view data loaded by a dlt pipeline."
+    },
+    {
+      "name": "adjust-endpoint",
+      "path": "skills/adjust-endpoint/SKILL.md",
+      "description": "Adjust a working dlt pipeline for production — remove dev limits, verify pagination, configure incremental loading."
+    },
+    {
+      "name": "new-endpoint",
+      "path": "skills/new-endpoint/SKILL.md",
+      "description": "Add a new REST API endpoint/resource to an existing dlt pipeline."
+    },
+    {
+      "name": "setup-secrets",
+      "path": "skills/setup-secrets/SKILL.md",
+      "description": "Safely manage dlt secrets in *.secrets.toml via MCP or CLI."
+    },
+    {
+      "name": "toolkit-dispatch",
+      "path": "skills/toolkit-dispatch/SKILL.md",
+      "description": "Route users to the right toolkit and skill based on intent."
+    },
+    {
+      "name": "improve-skills",
+      "path": "skills/improve-skills/SKILL.md",
+      "description": "Capture session learnings into SKILL.md files."
+    },
+    {
+      "name": "onboard-domain",
+      "path": "skills/onboard-domain/SKILL.md",
+      "description": "Add a new data source domain to the pipeline workspace using the template pattern."
+    },
+    {
+      "name": "add-dagster-orchestration",
+      "path": "skills/add-dagster-orchestration/SKILL.md",
+      "description": "Wire dlt pipelines into Dagster as software-defined assets with jobs and schedules."
+    },
+    {
+      "name": "setup-ci-cd",
+      "path": "skills/setup-ci-cd/SKILL.md",
+      "description": "Create CI/CD pipelines: GitHub Actions, Dockerfile, Dagster Cloud deploy, Dependabot."
+    },
+    {
+      "name": "implement-incremental-loading",
+      "path": "skills/implement-incremental-loading/SKILL.md",
+      "description": "Add incremental loading with dlt.sources.incremental, merge keys, and config-driven cursors."
+    },
+    {
+      "name": "implement-custom-pagination",
+      "path": "skills/implement-custom-pagination/SKILL.md",
+      "description": "Custom pagination for APIs using POST-body offsets, page/page_size GET, or non-standard patterns."
+    }
+  ],
+  "rules": [
+    {
+      "name": "init-dlthub-workspace",
+      "path": "rules/init-dlthub-workspace.mdc",
+      "description": "Session startup checks, secrets handling policy, workspace norms.",
+      "alwaysApply": true
+    },
+    {
+      "name": "rest-api-pipeline-workflow",
+      "path": "rules/rest-api-pipeline-workflow.mdc",
+      "description": "Ordered skill workflow for REST ingestion pipelines from discovery to deployment.",
+      "alwaysApply": true
+    }
+  ],
+  "mcp": {
+    "dlt-workspace-mcp": {
+      "command": "uv",
+      "args": ["run", "dlt", "ai", "mcp", "--stdio"],
+      "description": "dlt workspace MCP server for data inspection, secrets handling, and pipeline debugging."
+    }
+  },
+  "workflow": {
+    "entry": "find-source",
+    "core": ["create-rest-api-pipeline", "debug-pipeline", "validate-data"],
+    "extend": ["adjust-endpoint", "implement-incremental-loading", "implement-custom-pagination", "new-endpoint", "view-data"],
+    "productionize": ["onboard-domain", "add-dagster-orchestration", "setup-ci-cd"],
+    "utilities": ["setup-secrets", "toolkit-dispatch", "improve-skills"]
+  }
+}

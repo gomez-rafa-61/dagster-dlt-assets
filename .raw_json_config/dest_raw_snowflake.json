@@ -1,0 +1,19 @@
+{
+    "name": "Snowflake",
+    "workspaceId": "04977023-75a9-4ed4-ab9b-a804b8796b1e",
+    "definitionId": "424892c4-daac-4491-b35d-c6688ba547ba",
+    "configuration": {
+      "host": "curaleaf-curaprod.snowflakecomputing.com",
+      "role": "AIRBYTE_ROLE",
+      "schema": "AIRBYTE_DB",
+      "database": "AIRBYTE_DB",
+      "username": "AIRBYTE_USER",
+      "warehouse": "WH_AIRBYTE",
+      "credentials": {
+        "auth_type": "Key Pair Authentication",
+        "private_key": "HvJ8dmnBq3XiF.nrtqop"
+      },
+      "disable_type_dedupe": false,
+      "retention_period_days": 1
+    }
+  }

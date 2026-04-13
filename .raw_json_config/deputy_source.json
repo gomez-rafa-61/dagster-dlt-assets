@@ -1,0 +1,15 @@
+{
+    "name": "Deputy",
+    "workspaceId": "04977023-75a9-4ed4-ab9b-a804b8796b1e",
+    "definitionId": "84900339-eb7b-4f23-a4d1-301eebf4494a",
+    "configuration": {
+      "api_key_2": "d6a5f1a273e6808a520e571cade86054",
+      "__injected_declarative_manifest": {},
+      "roster_created_at_lookback_days": -100,
+      "employee_created_at_lookback_days": -20,
+      "timesheet_created_at_lookback_days": -30,
+      "labor_model_end_param_lookback_days": 37,
+      "labor_model_start_param_lookback_days": -1,
+      "timesheet_pay_return_created_at_lookback_days": -30
+    }
+  }
