@@ -81,7 +81,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: steps.prerun.outputs.result == 'docker-deploy'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Docker build
         id: run-docker-build
