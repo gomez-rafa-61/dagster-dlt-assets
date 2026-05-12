@@ -1,0 +1,3 @@
+[submodule "analytics-engineering"]
+	path = analytics-engineering
+	url = https://github.com/Curaleaf/analytics-engineering.git
