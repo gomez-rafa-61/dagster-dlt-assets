@@ -9,7 +9,7 @@ dependencies = [
     "dagster>=1.9.0",
     "dagster-webserver>=1.9.0",
     "dagster-dlt>=0.25.0",
-    "pymssql>=2.2.0",
+    "pymssql>=2.3.13",
     "requests>=2.28.0",
 ]
 
