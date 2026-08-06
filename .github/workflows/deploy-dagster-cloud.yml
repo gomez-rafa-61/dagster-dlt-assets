@@ -40,7 +40,7 @@ jobs:
         uses: dagster-io/dagster-cloud-action/actions/utils/prerun@v1.11.9
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
